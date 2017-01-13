@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+	<meta charset="utf-8">
+	<title>レール経路の再帰描画</title>
+<style type="text/css">
+body {
+	margin: 0;
+	padding: 0;
+}
+</style>
+<script type="text/javascript">
+// 2017.1.13  Jun Mitani
+
+	var UNIT_LENGTH = 50; 
+	var POINT_R = 0.8;
+
+	var DEPTH_LIMIT = 4; // 再帰の深さ
+	var bDrawPoint = true; // 点の描画の有無
+	var bDrawLine = true;// 経路の描画の有無
+	
+	function drawTree(ctx, type, angleIN, startX, startY, depth) {
+
+		if(type == "R") {
+			var cx = startX + UNIT_LENGTH * Math.sin((angleIN)* Math.PI / 180.0);
+			var cy = startY - UNIT_LENGTH * Math.cos((angleIN)* Math.PI / 180.0);
+			var sa = (angleIN + 90) * Math.PI / 180.0;
+			var ea = (angleIN + 45) * Math.PI / 180.0;
+
+			if(bDrawLine) {
+				ctx.beginPath();
+				ctx.arc(cx, cy, UNIT_LENGTH, ea, sa, false);
+				ctx.stroke();
+			}
+
+			startX = cx + UNIT_LENGTH * Math.cos((angleIN + 45) * Math.PI / 180.0);
+			startY = cy + UNIT_LENGTH * Math.sin((angleIN + 45) * Math.PI / 180.0);
+			angleIN -= 45;
+		} else if(type == "L") {
+			var cx = startX - UNIT_LENGTH * Math.sin((angleIN)* Math.PI / 180.0);
+			var cy = startY + UNIT_LENGTH * Math.cos((angleIN)* Math.PI / 180.0);
+			var sa = (angleIN - 90) * Math.PI / 180.0;
+			var ea = (angleIN - 45) * Math.PI / 180.0;
+			
+			if(bDrawLine) {
+				ctx.beginPath();
+				ctx.arc(cx, cy, UNIT_LENGTH, sa, ea, false);
+				ctx.stroke();
+			}
+			
+			startX = cx + UNIT_LENGTH * Math.cos((angleIN - 45) * Math.PI / 180.0);
+			startY = cy + UNIT_LENGTH * Math.sin((angleIN - 45) * Math.PI / 180.0);
+			angleIN += 45;		
+		} else if(type == "S") {
+			var sx = startX;
+			var sy = startY;
+			var ex = sx + UNIT_LENGTH * Math.cos(angleIN * Math.PI / 180.0);
+			var ey = sy + UNIT_LENGTH * Math.sin(angleIN * Math.PI / 180.0);
+
+			if(bDrawLine) {
+				ctx.beginPath();
+				ctx.moveTo(sx, sy);
+				ctx.lineTo(ex, ey);
+				ctx.stroke();
+			}
+
+			startX = ex;
+			startY = ey;		
+		} else {
+			return;
+		}
+		
+		if(bDrawPoint) {
+			ctx.beginPath();
+			ctx.arc(startX, startY, POINT_R*2, 0, Math.PI*2, true);
+			ctx.fill();			
+		}		
+		
+		if(depth >= DEPTH_LIMIT) return;
+				
+		drawTree(ctx, "L", angleIN, startX, startY, depth+1); 
+		drawTree(ctx, "S", angleIN, startX, startY, depth+1); 
+		drawTree(ctx, "R", angleIN, startX, startY, depth+1); 
+	}
+	
+	function draw() {
+	
+		var ww = window.innerWidth;
+		var wh = window.innerHeight;
+		
+		var canvas = document.getElementById("mycanvas");
+		canvas.width = ww;
+		canvas.height = wh;
+		
+		if(canvas.getContext) {
+			var ctx = canvas.getContext('2d');
+			ctx.setTransform(1, 0, 0, 1, 0, 0);
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			
+			ctx.translate( canvas.width/2, canvas.height/2);
+			var s = (canvas.height/2 -50) /(UNIT_LENGTH * (DEPTH_LIMIT));
+			ctx.scale(s, -s);
+			ctx.lineWidth = 1;
+			ctx.strokeStyle = 'rgb(0, 0, 0)';
+			ctx.fillStyle = 'rgb(0, 0, 0)';
+			
+			for(var i = 0; i < 8; i++) {
+				ctx.rotate(45 * Math.PI / 180);
+				drawTree(ctx, "L", 90, 0, 0, 1); 
+				drawTree(ctx, "S", 90, 0, 0, 1); 
+				drawTree(ctx, "R", 90, 0, 0, 1); 
+			}
+		}
+	}
+		
+	</script>
+	<style type="text/css">
+	  canvas { border: 1px solid #000000; }
+	</style>
+  </head>
+  <body onload="draw()">
+  <canvas id="mycanvas" width="800" height="600"></canvas>  
+  </body>
+</html>
